@@ -420,7 +420,8 @@ echo ""
 echo "########## Building the website"
 ${SCRIPT_BASE}/tis-urlstripper.sh
 # Each manual's search index (only the ones that changed), and tis-search.js, which uses it
-cp -a ${BASE}/website-framework/framework ${FSM_URLBASE}/
+# (writable: from a Nix package, the copies are as read-only as the store)
+cp -a ${BASE}/website-framework/framework ${FSM_URLBASE}/ && chmod -R u+w ${FSM_URLBASE}/framework
 echo "Search indexes:"
 ${SCRIPT_BASE}/build-search.py ${FSM_URLBASE}
 # Remake every manual's navigation, so ones downloaded by an older tis-clone get its changes (ie: the Home link)

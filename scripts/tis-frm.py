@@ -36,6 +36,7 @@ import importlib.util
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import urllib.parse
@@ -422,7 +423,9 @@ def main():
         subprocess.call([os.path.join(here, "tis-fetch.py"), "-q", HELP_PDF % division])
         with open(os.path.join(out, "toc.html"), "w") as fh:
             subprocess.call([os.path.join(here, "toc2html.py"), os.path.join(out, "toc.xml")], stdout=fh)
-        subprocess.call(["cp", os.path.join(cfg["SCRIPT_BASE"], "..", "website-framework", "index.html"), out])
+        # Only the contents: from a Nix package, a copy with the mode would be read-only like the store
+        shutil.copyfile(os.path.join(cfg["SCRIPT_BASE"], "..", "website-framework", "index.html"),
+                        os.path.join(out, "index.html"))
         print("    %d operations for %d VDS in %s" % (n, len(frm.cache["vds"]), out), flush=True)
     return rc
 

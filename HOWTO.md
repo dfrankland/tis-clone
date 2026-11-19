@@ -62,6 +62,18 @@
 
 Then see [How to use what you just downloaded](#how-to-use-what-you-just-downloaded) to browse it.
 
+# With Nix
+
+The flake packages tis-clone with everything it needs (Python with requests and pikepdf, curl, the "with patched qt" wkhtmltopdf, poppler, pdftk, rsync, ...), so there's nothing to install and setup.sh's software check always passes.  Run it straight from GitHub, or from a checkout with `.` in place of `github:rootflags/tis-clone`:
+
+         nix run github:rootflags/tis-clone#setup     # step 2: create or review ~/.tis/tis-clone.cfg
+         nix run github:rootflags/tis-clone#login     # step 3: tis-login.sh
+         nix run github:rootflags/tis-clone           # step 4: tis-clone (arguments after --, ie: -- 30B0U --no-pdf)
+
+The other apps are `lookup`, `serve`, `report` and `verify` (tis-lookup.py, tis-serve.py, tis-report.py and tis-verify.py).  To have every script on your PATH under its own name (`tis-clone`, `tis-login.sh`, `tis-report.py`, `dl-html-rm.sh`, ...; setup.sh is `tis-clone-setup`), use `nix shell github:rootflags/tis-clone`, or add the package to your profile or system configuration.
+
+The settings are still in ~/.tis/tis-clone.cfg, but the packaged scripts ignore its `BASE`: they always run each other from the package, and leave `BASE` as it is for a checkout.  Messages that name another script (ie: "Run .../tis-login.sh") give its path in the Nix store, which works too.  On Apple silicon Macs, nixpkgs only has the Intel wkhtmltopdf, which needs Rosetta 2 (`softwareupdate --install-rosetta`).  `nix develop` gives a shell with the same tools for working on the scripts, and `nix flake check` checks every script's syntax.
+
 # Advanced: doing it by hand
 Step 4 runs all of this for you.  Use these steps if it doesn't work for a vehicle, or to download or rebuild just one part.
 

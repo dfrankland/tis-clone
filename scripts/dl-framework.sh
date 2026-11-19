@@ -15,7 +15,9 @@ trap 'rm -f ${LIST}' EXIT
 
 # Set up local website framework CSS.  Not website-framework/index.html: that's each manual's frame page
 # (dl-html-inc.sh copies it), and here it would replace build-index.py's front page.
-cp -a ${BASE}/website-framework/framework ${BASE}/website-framework/main.html ${FSM_URLBASE}/
+# (Made writable: from a Nix package, the copies are as read-only as the store, and the next copy would fail.)
+cp -a ${BASE}/website-framework/framework ${BASE}/website-framework/main.html ${FSM_URLBASE}/ &&
+	chmod -R u+w ${FSM_URLBASE}/framework ${FSM_URLBASE}/main.html
 
 {
 	# Patched below

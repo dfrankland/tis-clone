@@ -37,6 +37,7 @@ RC=$?
 
 # Create JSP static navigation
 ${SCRIPT_BASE}/toc2html.py ${FSM_URLBASE}/${FOLDER}/toc.xml > ${FSM_URLBASE}/${FOLDER}/toc.html
-cp ${BASE}/website-framework/index.html  ${FSM_URLBASE}/${FOLDER}/
+# (writable: from a Nix package, the copy is as read-only as the store, and the next copy would fail)
+cp ${BASE}/website-framework/index.html  ${FSM_URLBASE}/${FOLDER}/ && chmod u+w ${FSM_URLBASE}/${FOLDER}/index.html
 
 exit $RC

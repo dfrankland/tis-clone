@@ -17,7 +17,8 @@
 #   POST its flateRateManualTreeForm with sectionId=N: that section's table (Component, Operation, Type,
 #        Operation Number, Hours (VDS) x3; the hours are the value of read-only inputs)
 # Every section is fetched for every group of 3 VDS and the rows are merged by operation number.  Results are
-# kept in $DOWNLOAD_TO/frmwork/, so a rerun only fetches what's missing.
+# kept in $DOWNLOAD_TO/frmwork/, so a rerun only fetches what's missing; when nothing is, it makes the pages
+# without asking TIS anything (no login needed), using the model as spelled on the command line.
 #
 # Usage:
 #   tis-frm.py DIVISION MODEL YEARS          ie: tis-frm.py LEXUS LX600 2024, TOYOTA "Land Cruiser" 2016-2018
@@ -202,6 +203,20 @@ class FRM:
         self.cache.setdefault("sections", {})[key] = read_rows(page, group)
         self.save()
 
+    def todo(self):
+        """Every (VDS group, section) to fetch, or None before the application has been opened"""
+        if "tree" not in self.cache:
+            return None
+        vds, tree = self.cache["vds"], self.cache["tree"]
+        groups = [vds[i:i + 3] for i in range(0, len(vds), 3)]
+        return [(g, sid) for g in groups for branch, sections in tree for sid, name, pages in sections]
+
+    def complete(self):
+        """Is everything cached (so making the pages needs nothing from TIS)?"""
+        todo = self.todo()
+        saved = self.cache.get("sections", {})
+        return todo is not None and all("%s|%s" % (",".join(g), sid) in saved for g, sid in todo)
+
     def run(self):
         """Fetch everything not cached yet"""
         def start():
@@ -209,11 +224,9 @@ class FRM:
             self.open_app()
         if "tree" not in self.cache:
             self.rs.retrying(start)
-        vds, tree = self.cache["vds"], self.cache["tree"]
-        if not vds or not tree:
+        if not self.cache["vds"] or not self.cache["tree"]:
             return False
-        groups = [vds[i:i + 3] for i in range(0, len(vds), 3)]
-        todo = [(g, sid) for g in groups for branch, sections in tree for sid, name, pages in sections]
+        todo = self.todo()
         done = 0
         for g, sid in todo:
             def one():
@@ -395,19 +408,27 @@ def main():
         return make_pdfs(args.vehicle, args.pdf_folder)
     rs = tis_refsearch.RefSearch(cfg, tis_refsearch.tis_fetch.wait_of(cfg, args.wait))
     division, model = args.vehicle[0].upper(), args.vehicle[1]
-    match = [m for m in rs.vehicles("model", division) if m.lower() == model.lower()]
-    if not match:
-        print("TIS has no %s model %s.  tis-refsearch.py --models %s lists them." % (division, model, division))
-        return 1
-    model = match[0]
     work = os.path.join(cfg["DOWNLOAD_TO"], "frmwork")
     os.makedirs(work, exist_ok=True)
+    # The cache files' names are upper case, so they're found before TIS says how it spells the model
+    frms = [FRM(rs, division, model, year, os.path.join(work, folder_name(division, model, year) + ".json"))
+            for year in tis_refsearch.years_of(args.vehicle[2])]
+    if all(frm.complete() for frm in frms):
+        print("Everything is saved in %s; making the pages without asking TIS" % work, flush=True)
+    else:
+        match = [m for m in rs.vehicles("model", division) if m.lower() == model.lower()]
+        if not match:
+            print("TIS has no %s model %s.  tis-refsearch.py --models %s lists them." % (division, model, division))
+            return 1
+        model = match[0]
+        for frm in frms:
+            frm.model = model
 
     rc = 0
-    for year in tis_refsearch.years_of(args.vehicle[2]):
+    for frm in frms:
+        year = frm.year
         name = folder_name(division, model, year)
         print("Flat Rate Manual for the %s %s %s ..." % (year, division, model), flush=True)
-        frm = FRM(rs, division, model, year, os.path.join(work, name + ".json"))
         try:
             if not frm.run():
                 print("    TIS has no Flat Rate Manual for it.")

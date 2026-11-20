@@ -18,12 +18,12 @@
 . ${SCRIPT_BASE}/tis-log.sh
 
 KIND=ref
-GROUPS=""
+SEARCH_GROUPS=""
 WHAT="Reference Information"
 RERUN=dl-ref.sh
 if [ "x$1" = x--bulletins ]; then
 	KIND=bulletins
-	GROUPS="-g bulletins -g campaigns"
+	SEARCH_GROUPS="-g bulletins -g campaigns"
 	WHAT="Service Bulletins, Tech Tips and Campaigns"
 	RERUN=dl-bulletins.sh
 	shift
@@ -42,7 +42,7 @@ NAME=`echo "$1_$2_$3" | tr 'a-z /,' 'A-Z__+'`
 FOLDER=/t3Portal/external/en/${KIND}/${NAME}
 mkdir -p ${FSM_URLBASE}${FOLDER}
 
-${SCRIPT_BASE}/tis-refsearch.py ${GROUPS} --toc ${FSM_URLBASE}${FOLDER}/toc.xml --rerun ${RERUN} \
+${SCRIPT_BASE}/tis-refsearch.py ${SEARCH_GROUPS} --toc ${FSM_URLBASE}${FOLDER}/toc.xml --rerun ${RERUN} \
 	--what "${WHAT}" "$1" "$2" "$3"
 RC=$?
 [ $RC = 75 ] && exit 75
